@@ -123,13 +123,9 @@ app.post('/api/submit', async (req, res) => {
 app.get('/api/responses', async (req, res) => {
   try {
     const donations = await Donation.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: donations });
+    res.json(Array.isArray(donations) ? donations : []);
   } catch (err) {
-    console.error('Fetch error:', err);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to fetch donations' 
-    });
+    res.status(500).json([]);
   }
 });
 
@@ -174,26 +170,19 @@ app.delete('/api/donation/:id', async (req, res) => {
 app.get('/api/export', async (req, res) => {
   try {
     const donations = await Donation.find().sort({ createdAt: -1 });
-    
-    // Create CSV content
-    const csvHeader = 'Name,Father\'s Name,Phone,City,Country,Amount,Currency,Cause,Date\n';
-    const csvRows = donations.map(donation => {
-      const date = new Date(donation.createdAt).toLocaleDateString();
-      return `"${donation.name}","${donation.fatherName}","${donation.phone}","${donation.city}","${donation.country}",${donation.amount},"${donation.currency}","${donation.cause}","${date}"`;
-    }).join('\n');
-    
-    const csvContent = csvHeader + csvRows;
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="karamchedu_donations.csv"');
-    res.send(csvContent);
-    
-  } catch (error) {
-    console.error('Error exporting CSV:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to export CSV' 
+    if (!Array.isArray(donations) || donations.length === 0) {
+      return res.status(200).send('No donations to export');
+    }
+    const fields = ['name', 'fatherName', 'phone', 'city', 'country', 'amount', 'currency', 'cause', 'createdAt'];
+    const csvRows = [fields.join(',')];
+    donations.forEach(d => {
+      csvRows.push(fields.map(f => '"' + (d[f] ? String(d[f]).replace(/"/g, '""') : '') + '"').join(','));
     });
+    res.header('Content-Type', 'text/csv');
+    res.attachment('donations.csv');
+    res.send(csvRows.join('\n'));
+  } catch (err) {
+    res.status(500).send('Error exporting CSV');
   }
 });
 
