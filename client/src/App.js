@@ -1,437 +1,251 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const CAUSES = [
-  'Eldercare',
-  'Education', 
-  'Health',
-  'Employment Training'
+const TABS = [
+  { label: 'Donate', key: 'donate' },
+  { label: 'All Donations', key: 'donations' },
+  { label: 'Export', key: 'export' },
 ];
 
-const CURRENCIES = ['USD ($)', 'INR (₹)'];
-
-// API Base URL - handles both development and production
-const API_BASE = process.env.NODE_ENV === 'production' 
-  ? window.location.origin  // Use the same domain in production
-  : 'http://localhost:5000';
+const initialForm = {
+  name: '',
+  fatherName: '',
+  phone: '',
+  city: '',
+  country: '',
+  amount: '',
+  currency: 'USD',
+  cause: '',
+};
 
 function App() {
-  const [form, setForm] = useState({
-    name: '',
-    fatherName: '',
-    phone: '',
-    city: '',
-    country: '',
-    amount: '',
-    currency: CURRENCIES[0],
-    cause: CAUSES[0]
-  });
-  const [responses, setResponses] = useState([]);
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('donate');
+  const [form, setForm] = useState(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-  const [activeSection, setActiveSection] = useState('form'); // form, data, export
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [donationToDelete, setDonationToDelete] = useState(null);
+  const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
-  // Fetch all donations on component mount
   useEffect(() => {
-    fetchResponses();
-  }, []);
+    if (activeTab === 'donations') fetchDonations();
+  }, [activeTab]);
 
-  const fetchResponses = async () => {
+  const fetchDonations = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError('');
-      const res = await fetch(`${API_BASE}/api/responses`);
+      const res = await fetch('/api/responses');
       const data = await res.json();
-      if (data.success) {
-        setResponses(data.data);
+      // Defensive: handle both array and object responses
+      if (Array.isArray(data)) {
+        setDonations(data);
+      } else if (Array.isArray(data.donations)) {
+        setDonations(data.donations);
       } else {
-        setError(data.error || 'Failed to fetch data');
+        setDonations([]);
+        setError('Unexpected response from server.');
       }
-    } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      setError('Failed to fetch donations.');
+      setDonations([]);
     }
+    setLoading(false);
   };
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setMessage('');
-    setError('');
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    setSuccess('');
     try {
-      setLoading(true);
-      setError('');
-      setMessage('');
-      
-      const res = await fetch(`${API_BASE}/api/submit`, {
+      const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setShowSuccessModal(true);
-        setForm({
-          name: '',
-          fatherName: '',
-          phone: '',
-          city: '',
-          country: '',
-          amount: '',
-          currency: CURRENCIES[0],
-          cause: CAUSES[0]
-        });
-        // Refresh the data list
-        fetchResponses();
-      } else {
-        setError(data.error || 'Submission failed');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
+      if (!res.ok) throw new Error('Submission failed');
+      setSuccess('Thank you for your donation!');
+      setForm(initialForm);
+    } catch (e) {
+      setError('Failed to submit donation.');
     }
+    setSubmitting(false);
   };
 
-  const handleExport = () => {
-    window.open(`${API_BASE}/api/export`, '_blank');
-  };
-
-  const handleDeleteClick = (donation) => {
-    setDonationToDelete(donation);
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!donationToDelete) return;
-
+  const handleDelete = async id => {
+    if (!window.confirm('Are you sure you want to delete this donation?')) return;
+    setDeleteId(id);
     try {
-      setLoading(true);
-      setError('');
-      
-      const res = await fetch(`${API_BASE}/api/donation/${donationToDelete._id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setMessage('✅ Donation deleted successfully.');
-        setShowDeleteModal(false);
-        setDonationToDelete(null);
-        fetchResponses();
-      } else {
-        setError(data.error || 'Failed to delete donation');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
+      const res = await fetch(`/api/donation/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setDonations(donations.filter(d => d._id !== id));
+    } catch (e) {
+      setError('Failed to delete donation.');
     }
+    setDeleteId(null);
   };
 
-  const closeSuccessModal = () => {
-    setShowSuccessModal(false);
-  };
-
-  const closeDeleteModal = () => {
-    setShowDeleteModal(false);
-    setDonationToDelete(null);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/export');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'donations.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setError('Failed to export CSV.');
+    }
+    setExporting(false);
   };
 
   return (
-    <div className="app">
+    <div className="App">
       <header className="app-header">
-        <h1>🌟 Karamchedu Donation Survey 🌟</h1>
-        <p>Supporting communities through your generosity</p>
+        <h1>Karamchedu Donation</h1>
+        <nav className="tab-nav">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              className={`tab-btn${activeTab === tab.key ? ' active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </header>
-
-      <main className="app-main">
-        {/* Navigation Tabs */}
-        <div className="tab-navigation">
-          <button 
-            className={`tab-button ${activeSection === 'form' ? 'active' : ''}`}
-            onClick={() => setActiveSection('form')}
-          >
-            📝 Donation Form
-          </button>
-          <button 
-            className={`tab-button ${activeSection === 'data' ? 'active' : ''}`}
-            onClick={() => setActiveSection('data')}
-          >
-            📊 Donation Data ({responses.length})
-          </button>
-          <button 
-            className={`tab-button ${activeSection === 'export' ? 'active' : ''}`}
-            onClick={() => setActiveSection('export')}
-          >
-            📥 Export CSV
-          </button>
-        </div>
-
-        {/* Form Section */}
-        {activeSection === 'form' && (
-          <div className="form-section">
-            <h2>💝 Donation Information</h2>
-            <form onSubmit={handleSubmit} className="donation-form">
+      <main className="tab-content">
+        {activeTab === 'donate' && (
+          <section className="donate-section">
+            <h2 className="donate-heading">Make a Donation</h2>
+            <form className="donation-form big-form" onSubmit={handleSubmit}>
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="name">Full Name *</label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                  />
+                  <label>Name</label>
+                  <input name="name" value={form.name} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="fatherName">Father's Name *</label>
-                  <input
-                    id="fatherName"
-                    name="fatherName"
-                    type="text"
-                    placeholder="Enter your father's name"
-                    value={form.fatherName}
-                    onChange={handleChange}
-                    required
-                  />
+                  <label>Father's Name</label>
+                  <input name="fatherName" value={form.fatherName} onChange={handleChange} required />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="phone">Phone Number *</label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={form.phone}
-                    onChange={handleChange}
-                    required
-                  />
+                  <label>Phone</label>
+                  <input name="phone" value={form.phone} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="city">City *</label>
-                  <input
-                    id="city"
-                    name="city"
-                    type="text"
-                    placeholder="Enter your city"
-                    value={form.city}
-                    onChange={handleChange}
-                    required
-                  />
+                  <label>City</label>
+                  <input name="city" value={form.city} onChange={handleChange} required />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="country">Country *</label>
-                  <input
-                    id="country"
-                    name="country"
-                    type="text"
-                    placeholder="Enter your country"
-                    value={form.country}
-                    onChange={handleChange}
-                    required
-                  />
+                  <label>Country</label>
+                  <input name="country" value={form.country} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="amount">Donation Amount *</label>
-                  <input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Enter donation amount"
-                    value={form.amount}
-                    onChange={handleChange}
-                    required
-                  />
+                  <label>Donation Amount</label>
+                  <input name="amount" type="number" min="1" value={form.amount} onChange={handleChange} required />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="currency">Currency *</label>
-                  <select
-                    id="currency"
-                    name="currency"
-                    value={form.currency}
-                    onChange={handleChange}
-                    required
-                  >
-                    {CURRENCIES.map(currency => (
-                      <option key={currency} value={currency}>{currency}</option>
-                    ))}
+                  <label>Currency</label>
+                  <select name="currency" value={form.currency} onChange={handleChange} required>
+                    <option value="USD">USD</option>
+                    <option value="INR">INR</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="cause">Cause for Donation *</label>
-                  <select
-                    id="cause"
-                    name="cause"
-                    value={form.cause}
-                    onChange={handleChange}
-                    required
-                  >
-                    {CAUSES.map(cause => (
-                      <option key={cause} value={cause}>{cause}</option>
-                    ))}
-                  </select>
+                  <label>Cause</label>
+                  <input name="cause" value={form.cause} onChange={handleChange} required />
                 </div>
               </div>
-
-              <button 
-                type="submit" 
-                className="submit-button"
-                disabled={loading}
-              >
-                {loading ? 'Submitting...' : '🎁 Submit Donation'}
+              <button className="submit-button big-button" type="submit" disabled={submitting}>
+                {submitting ? 'Submitting...' : 'Donate Now'}
               </button>
-
-              {message && <div className="success-message">{message}</div>}
+              {success && <div className="success-message">{success}</div>}
               {error && <div className="error-message">{error}</div>}
             </form>
-          </div>
+          </section>
         )}
-
-        {/* Data View Section */}
-        {activeSection === 'data' && (
-          <div className="data-section">
-            <div className="data-header">
-              <h2>📊 Donation Data ({responses.length})</h2>
-            </div>
-            {loading && <div className="loading">Loading donations...</div>}
-            {error && <div className="error-message">{error}</div>}
-            {!loading && !error && (
+        {activeTab === 'donations' && (
+          <section>
+            <h2>All Donations</h2>
+            {loading ? (
+              <div className="loading">Loading donations...</div>
+            ) : (
               <div className="table-container">
-                {responses.length === 0 ? (
-                  <div className="no-data">
-                    <p>No donations found yet. Be the first to submit a donation!</p>
-                  </div>
-                ) : (
-                  <table className="donations-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Father's Name</th>
-                        <th>Phone</th>
-                        <th>City</th>
-                        <th>Country</th>
-                        <th>Amount</th>
-                        <th>Currency</th>
-                        <th>Cause</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {responses.map((donation, i) => (
-                        <tr key={donation._id || i}>
-                          <td>{donation.name}</td>
-                          <td>{donation.fatherName}</td>
-                          <td>{donation.phone}</td>
-                          <td>{donation.city}</td>
-                          <td>{donation.country}</td>
-                          <td>{donation.amount}</td>
-                          <td>{donation.currency}</td>
-                          <td>{donation.cause}</td>
-                          <td>{new Date(donation.createdAt).toLocaleDateString()}</td>
+                <table className="donations-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Father's Name</th>
+                      <th>Phone</th>
+                      <th>City</th>
+                      <th>Country</th>
+                      <th>Amount</th>
+                      <th>Currency</th>
+                      <th>Cause</th>
+                      <th>Date</th>
+                      <th>Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {donations.length === 0 ? (
+                      <tr><td colSpan="10" className="no-data">No donations yet.</td></tr>
+                    ) : (
+                      donations.map(d => (
+                        <tr key={d._id}>
+                          <td>{d.name}</td>
+                          <td>{d.fatherName}</td>
+                          <td>{d.phone}</td>
+                          <td>{d.city}</td>
+                          <td>{d.country}</td>
+                          <td>{d.amount}</td>
+                          <td>{d.currency}</td>
+                          <td>{d.cause}</td>
+                          <td>{d.date ? new Date(d.date).toLocaleString() : ''}</td>
                           <td>
-                            <button 
-                              onClick={() => handleDeleteClick(donation)}
-                              className="delete-row-button"
-                              title="Delete this donation"
-                            >
-                              🗑️
+                            <button className="delete-row-button" onClick={() => handleDelete(d._id)} disabled={deleteId === d._id}>
+                              {deleteId === d._id ? 'Deleting...' : 'Delete'}
                             </button>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             )}
-          </div>
+            {error && <div className="error-message">{error}</div>}
+          </section>
         )}
-
-        {/* Export Section */}
-        {activeSection === 'export' && (
-          <div className="export-section">
-            <h2>📥 Export Donations</h2>
-            <div className="export-info">
-              <p>Download all donation data as a CSV file for analysis and record keeping.</p>
-              <p><strong>Total donations:</strong> {responses.length}</p>
-            </div>
-            <button onClick={handleExport} className="export-button">
-              📥 Download CSV File
+        {activeTab === 'export' && (
+          <section>
+            <h2>Export Donations</h2>
+            <button className="export-button" onClick={handleExport} disabled={exporting}>
+              {exporting ? 'Exporting...' : 'Export as CSV'}
             </button>
-          </div>
+            {error && <div className="error-message">{error}</div>}
+          </section>
         )}
       </main>
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="modal-overlay">
-          <div className="success-modal">
-            <div className="success-icon">🎉</div>
-            <h3>Successful Survey!</h3>
-            <p>Thank you for your incredible generosity. Your donation will make a significant impact in the lives of those in need. Your kindness goes a long way in building stronger communities and creating positive change. We are truly grateful for your support.</p>
-            <button onClick={closeSuccessModal} className="continue-button">
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && donationToDelete && (
-        <div className="modal-overlay">
-          <div className="delete-modal">
-            <div className="delete-icon">⚠️</div>
-            <h3>Delete Donation</h3>
-            <p>Are you sure you want to delete this donation?</p>
-            <div className="donation-preview">
-              <p><strong>Name:</strong> {donationToDelete.name}</p>
-              <p><strong>Amount:</strong> {donationToDelete.amount} {donationToDelete.currency}</p>
-              <p><strong>Cause:</strong> {donationToDelete.cause}</p>
-              <p><strong>Date:</strong> {new Date(donationToDelete.createdAt).toLocaleDateString()}</p>
-            </div>
-            <p className="warning-text">This action cannot be undone.</p>
-            <div className="modal-buttons">
-              <button onClick={handleDeleteConfirm} className="delete-confirm-button">
-                Yes, Delete
-              </button>
-              <button onClick={closeDeleteModal} className="cancel-button">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <footer className="app-footer">
-        <p>© 2024 Karamchedu Donation Survey - Supporting communities worldwide 🌍</p>
-      </footer>
     </div>
   );
 }
