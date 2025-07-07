@@ -1,0 +1,32 @@
+{
+  "name": "karamchedu-donation-app",
+  "version": "1.0.0",
+  "description": "A globally deployable donation survey application for Karamchedu",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "heroku-postbuild": "cd client && npm install && npm run build"
+  },
+  "keywords": [
+    "donation",
+    "survey",
+    "react",
+    "nodejs",
+    "mongodb",
+    "express"
+  ],
+  "author": "Karamchedu Donation Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+} 
