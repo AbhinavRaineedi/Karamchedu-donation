@@ -28,6 +28,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'donations') fetchDonations();
@@ -69,13 +70,21 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error('Submission failed');
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Submission failed');
       setSuccess('Thank you for your donation!');
+      setShowThankYou(true);
       setForm(initialForm);
     } catch (e) {
       setError('Failed to submit donation.');
     }
     setSubmitting(false);
+  };
+
+  const handleContinue = () => {
+    setShowThankYou(false);
+    setSuccess('');
+    setError('');
   };
 
   const handleDelete = async id => {
@@ -130,58 +139,72 @@ function App() {
         {activeTab === 'donate' && (
           <section className="donate-section">
             <h2 className="donate-heading">Make a Donation</h2>
-            <form className="donation-form big-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Name</label>
-                  <input name="name" value={form.name} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Father's Name</label>
-                  <input name="fatherName" value={form.fatherName} onChange={handleChange} required />
-                </div>
+            {showThankYou ? (
+              <div className="success-modal">
+                <div className="success-icon">🎉</div>
+                <h3>Thank you for your donation!</h3>
+                <p>Your support is greatly appreciated.</p>
+                <button className="continue-button" onClick={handleContinue}>Continue</button>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Phone</label>
-                  <input name="phone" value={form.phone} onChange={handleChange} required />
+            ) : (
+              <form className="donation-form big-form" onSubmit={handleSubmit}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Name</label>
+                    <input name="name" value={form.name} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Father's Name</label>
+                    <input name="fatherName" value={form.fatherName} onChange={handleChange} required />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>City</label>
-                  <input name="city" value={form.city} onChange={handleChange} required />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Phone</label>
+                    <input name="phone" value={form.phone} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>City</label>
+                    <input name="city" value={form.city} onChange={handleChange} required />
+                  </div>
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Country</label>
-                  <input name="country" value={form.country} onChange={handleChange} required />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Country</label>
+                    <input name="country" value={form.country} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Donation Amount</label>
+                    <input name="amount" type="number" min="1" value={form.amount} onChange={handleChange} required />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Donation Amount</label>
-                  <input name="amount" type="number" min="1" value={form.amount} onChange={handleChange} required />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Currency</label>
+                    <select name="currency" value={form.currency} onChange={handleChange} required>
+                      <option value="USD">USD</option>
+                      <option value="INR">INR</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Cause</label>
+                    <select name="cause" value={form.cause} onChange={handleChange} required>
+                      <option value="">Select a cause</option>
+                      <option value="Eldercare">Eldercare</option>
+                      <option value="Education">Education</option>
+                      <option value="Health">Health</option>
+                      <option value="Employment Training">Employment Training</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Currency</label>
-                  <select name="currency" value={form.currency} onChange={handleChange} required>
-                    <option value="USD">USD</option>
-                    <option value="INR">INR</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Cause</label>
-                  <input name="cause" value={form.cause} onChange={handleChange} required />
-                </div>
-              </div>
-              <button className="submit-button big-button" type="submit" disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Donate Now'}
-              </button>
-              {success && <div className="success-message">{success}</div>}
-              {error && <div className="error-message">{error}</div>}
-            </form>
+                <button className="submit-button big-button" type="submit" disabled={submitting}>
+                  {submitting ? 'Submitting...' : 'Donate Now'}
+                </button>
+                {error && <div className="error-message">{error}</div>}
+              </form>
+            )}
           </section>
         )}
         {activeTab === 'donations' && (

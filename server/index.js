@@ -74,9 +74,15 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/submit', async (req, res) => {
   try {
+    console.log('Received donation submission:', req.body);
     const { name, fatherName, phone, city, country, amount, currency, cause } = req.body;
     if (!name || !fatherName || !phone || !city || !country || !amount || !currency || !cause) {
       return res.status(400).json({ success: false, error: 'All fields are required.' });
+    }
+    // Validate cause
+    const allowedCauses = ['Eldercare', 'Education', 'Health', 'Employment Training'];
+    if (!allowedCauses.includes(cause)) {
+      return res.status(400).json({ success: false, error: 'Invalid cause selected.' });
     }
     const donation = new Donation({
       name,
@@ -84,14 +90,15 @@ app.post('/api/submit', async (req, res) => {
       phone,
       city,
       country,
-      amount,
+      amount: Number(amount),
       currency,
-      cause,
-      date: new Date()
+      cause
+      // createdAt will be set automatically
     });
     await donation.save();
     res.json({ success: true, message: 'Donation saved successfully.' });
   } catch (err) {
+    console.error('Error saving donation:', err);
     res.status(500).json({ success: false, error: 'Failed to save donation.' });
   }
 });
@@ -180,9 +187,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = 6000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📝 Submit donations: http://localhost:${PORT}/api/submit`);
   console.log(`📊 View donations: http://localhost:${PORT}/api/responses`);
