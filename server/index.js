@@ -75,48 +75,24 @@ app.get('/api/health', (req, res) => {
 app.post('/api/submit', async (req, res) => {
   try {
     const { name, fatherName, phone, city, country, amount, currency, cause } = req.body;
-    
-    // Validation
     if (!name || !fatherName || !phone || !city || !country || !amount || !currency || !cause) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'All fields are required' 
-      });
+      return res.status(400).json({ success: false, error: 'All fields are required.' });
     }
-
-    if (amount <= 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Amount must be greater than 0' 
-      });
-    }
-
-    // Create new donation
     const donation = new Donation({
       name,
       fatherName,
       phone,
       city,
       country,
-      amount: parseFloat(amount),
+      amount,
       currency,
-      cause
+      cause,
+      date: new Date()
     });
-
     await donation.save();
-    
-    res.status(201).json({ 
-      success: true, 
-      message: 'Donation submitted successfully',
-      data: donation 
-    });
-    
-  } catch (error) {
-    console.error('Error submitting donation:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to submit donation' 
-    });
+    res.json({ success: true, message: 'Donation saved successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to save donation.' });
   }
 });
 
