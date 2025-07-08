@@ -105,7 +105,7 @@ app.post('/api/submit', async (req, res) => {
 
 app.get('/api/responses', async (req, res) => {
   try {
-    const donations = await Donation.find().sort({ createdAt: -1 });
+    const donations = await Donation.find().sort({ amount: -1, currency: 1 });
     res.json(Array.isArray(donations) ? donations : []);
   } catch (err) {
     res.status(500).json([]);
@@ -152,7 +152,7 @@ app.delete('/api/donation/:id', async (req, res) => {
 
 app.get('/api/export', async (req, res) => {
   try {
-    const donations = await Donation.find().sort({ createdAt: -1 });
+    const donations = await Donation.find().sort({ amount: -1, currency: 1 });
     if (!Array.isArray(donations) || donations.length === 0) {
       return res.status(200).send('No donations to export');
     }
