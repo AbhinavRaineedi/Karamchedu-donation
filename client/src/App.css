@@ -365,6 +365,70 @@ body, #root, .App {
   transform: translateY(-4px) scale(1.04);
 }
 
+/* Bank Details Styles */
+.bank-details-section {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+  border-radius: 1.5rem;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 32px rgba(37,117,252,0.15);
+  backdrop-filter: blur(10px);
+}
+
+.bank-details-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 4px 16px rgba(37,117,252,0.3);
+  letter-spacing: 1px;
+}
+
+.bank-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bank-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  border-radius: 1rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
+}
+
+.bank-detail-row:hover {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(37,117,252,0.2);
+}
+
+.bank-label {
+  font-weight: 600;
+  color: #fff;
+  font-size: 1rem;
+  min-width: 140px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.bank-value {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1rem;
+  text-align: right;
+  flex: 1;
+  margin-left: 1rem;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  word-break: break-word;
+}
+
+/* Mobile Responsive for Bank Details */
 @media (max-width: 900px) {
   .donation-form.big-form {
     padding: 1.2rem 0.5rem;
@@ -388,6 +452,34 @@ body, #root, .App {
   .big-button.submit-button {
     font-size: 1.2rem;
     padding: 1.2rem;
+  }
+  .bank-details-section {
+    margin: 1.5rem 0;
+    padding: 1.5rem 1rem;
+    border-radius: 1rem;
+  }
+  
+  .bank-details-title {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .bank-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+  }
+  
+  .bank-label {
+    min-width: auto;
+    font-size: 0.9rem;
+  }
+  
+  .bank-value {
+    text-align: left;
+    margin-left: 0;
+    font-size: 0.9rem;
   }
 }
 
@@ -473,5 +565,25 @@ body, #root, .App {
     font-size: 1rem;
     padding: 0.7rem 1.2rem;
     border-radius: 0.7rem;
+  }
+  .bank-details-section {
+    margin: 1rem 0;
+    padding: 1rem 0.5rem;
+  }
+  
+  .bank-details-title {
+    font-size: 1.2rem;
+  }
+  
+  .bank-detail-row {
+    padding: 0.6rem 0.8rem;
+  }
+  
+  .bank-label {
+    font-size: 0.8rem;
+  }
+  
+  .bank-value {
+    font-size: 0.8rem;
   }
 } 

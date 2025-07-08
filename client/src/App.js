@@ -144,6 +144,49 @@ function App() {
                 <div className="success-icon">🎉</div>
                 <h3>Thank you for your donation!</h3>
                 <p>Your support is greatly appreciated.</p>
+                
+                <div className="bank-details-section">
+                  <h4 className="bank-details-title">🏦 Bank Details to Donate To</h4>
+                  <div className="bank-details-container">
+                    <div className="bank-detail-row">
+                      <span className="bank-label">Beneficiary Name:</span>
+                      <span className="bank-value">GAUTAMA BUDDHA RURAL DEVELOPMENT SOCIETY</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">Bank Name:</span>
+                      <span className="bank-value">UNION BANK OF INDIA, KARAMCHEDU BRANCH</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">Account Number:</span>
+                      <span className="bank-value">033211010000041 (CD GENERAL)</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">IFSC Code:</span>
+                      <span className="bank-value">UBIN0803324</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">SWIFT Code:</span>
+                      <span className="bank-value">CITIUS33</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">SWIFT Field 56A:</span>
+                      <span className="bank-value">CITI BANK, NEWYORK</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">SWIFT Field 57:</span>
+                      <span className="bank-value">UNION BANK OF INDIA, ONGOLE MAIN BRANCH</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">SWIFT Code (Field 57):</span>
+                      <span className="bank-value">UBININBBONG</span>
+                    </div>
+                    <div className="bank-detail-row">
+                      <span className="bank-label">PAN Number:</span>
+                      <span className="bank-value">AALAG5174B</span>
+                    </div>
+                  </div>
+                </div>
+                
                 <button className="continue-button" onClick={handleContinue}>Continue</button>
               </div>
             ) : (
